@@ -1,88 +1,46 @@
-# Continuous Inkjet Printing Simulation (MATLAB)
+# Continuous Inkjet Printer Simulation
 
-This project simulates how **continuous inkjet printers (CIJPs)** deflect and place ink droplets onto a substrate using electric fields.  
-It converts an input image into a sequence of voltage waveforms that would be applied to deflection plates, showing how characters or shapes could be printed.
+MATLAB model that converts an image into the deflection-voltage waveform a continuous inkjet printer would use to place each droplet, then animates the print.
 
----
+**Stack:** MATLAB (live script)
+**Context:** Electromagnetics coursework, with Hanson Nguyen
 
-## 🖨️ Background
+![Printing the letter A](letter_gifs/DCWaveform%20(A).gif)
 
-Continuous inkjet printers operate by:
-1. Breaking up an ink stream into droplets using piezoelectric oscillation.
-2. Charging selected droplets with a charging electrode.
-3. Deflecting charged droplets using electric fields between deflection plates so they land in the correct positions on the substrate:contentReference[oaicite:2]{index=2}.
+## Highlights
 
-This project demonstrates that process in simulation:
-- An input image (black/white) is translated into a **voltage waveform vector**.
-- Each voltage corresponds to a deflection needed to place an ink droplet at the right location.
-- A `0 V` entry indicates a line change (printer carriage moves to next row).
-- Droplet placement is visualized as scatter plots and animated GIFs.
+- **Solves the inverse problem.** Given a target image, derive the field — then the voltage — needed to deflect each droplet to the right offset.
+- **Validates by round-tripping.** Reconstructs the page from the voltage vector alone. If forward and inverse disagree, the output image visibly breaks.
+- Same physics as CRT beam deflection: charged particle, uniform field, initial velocity.
+- Encodes line breaks as `0 V` entries in a single flat waveform vector.
 
-Compared to **drop-on-demand (DOD) printers**, CIJPs are faster and more common in industrial packaging, though less precise.
+## Method
 
----
+1. Threshold the image at 127.5. Dark pixels become droplets.
+2. Solve for the field at each droplet's target offset:
+   `E = (m·u²·d) / ((L − w/2)·q·w)`
+   where `d` = offset, `L` = distance to paper, `w` = plate width, `u` = initial velocity, `m`/`q` = droplet mass and charge.
+3. Multiply by plate separation → voltage. Flatten to one vector, `0 V` = carriage return.
+4. Run the deflection equation forward from that vector alone. Animate the reconstruction.
 
-## ✨ Features
+## Background
 
-- MATLAB implementation (`.mlx` live script) with full comments.
-- Converts any image into an **electric field matrix** and then a **voltage waveform vector**.
-- Generates:
-  - **Voltage vs. Time waveform plot**
-  - **Reconstructed substrate output (scatter plot)**
-  - **Animated GIFs** showing the printing process line by line.
+Continuous inkjet printers run a constant ink stream, break it into uniform droplets with a piezo oscillator, charge each droplet, and steer it between deflection plates. Unused droplets divert to a gutter and recycle. Faster and less precise than drop-on-demand, primarily used for packaging and date coding.
 
----
+## Files
 
-## 📂 Repository Structure
+| File | Purpose |
+|---|---|
+| `Inkjet_Printing.mlx` | MATLAB live script, commented throughout |
+| `Inkjet_Printing.txt` | Plain-text export, readable without MATLAB |
+| `Inkjet Printing Paper.pdf` | Full derivation and field geometry |
+| `letter_gifs/` | Output animations |
 
-| File | Description |
-|------|-------------|
-| `letter_gifs` | Example gifs produced by the MATLAB live script |
-| `Inkjet Printing Paper.pdf` | Detailed write-up of math/physics behind the code |
-| `Inkjet_Printing.mlx` | MATLAB live script implementing the simulation. |
-| `Inkjet_Printing.txt` | Text file of MATLAB simulation code for online viewing. |
+## Run it
 
----
+Open `Inkjet_Printing.mlx` in MATLAB R2022a+. **Change the `imread` path at the top** — it's currently an absolute path from the machine it was written on. Any black-and-white image works.
 
-## 🚀 Usage
+## Limitations
 
-1. Open the `.mlx` file in **MATLAB** (R2022a or later recommended).
-2. Run the script — it will:
-   - Read in an input image (matrix format).
-   - Compute the required electric field at each pixel.
-   - Convert that field into a **voltage waveform vector**.
-   - Generate output plots and save animations.
-3. Replace the input image with your own (black/white works best).
-
----
-
-## 📊 Example Outputs
-
-### Voltage Waveform
-Shows discrete steps of voltage over time, with `0 V` marking line changes.
-
-![Voltage Waveform Example](letter_gifs/DCWaveform%20(A).gif)
-
-### Animated Ink Droplet Printing
-Ink droplets deflected line by line to reconstruct the input image.
-
-![Inkjet Printer Animation](letter_gifs/INKJET-PRINTER-INDUSTRI.gif)
-
----
-
-## 🔬 References
-
-- [1] D. K. Cheng, Field and Wave Electromagnetics, Second Edition. Reading, MA: Addison-
-Wesley Pub. Co., 1989.
-- [2] M. Ikegawa, M. Ishikawa, E. Ishii, N. Harada, and T. Takagishi, “Ink-particle simulation
-for continuous inkjet type printer,” NIP &amp; Digital Fabrication Conference, vol. 31, no.
-1, pp. 13–18, 2015. doi:10.2352/issn.2169-4451.2015.31.1.art00006_1
-- [3] T. Otowa, S. Tsubouchi, and Y. Suwa, “Analysis of the ink-stream break-up phenomenon
-in continuous inkjet printing,” ACS Omega, vol. 8, no. 38, pp. 34442–34447, 2023.
-doi:10.1021/acsomega.3c02790
-
----
-
-## 👤 Authors
-
-Project by **Benjamin Tung** and **Hanson Nguyen**
+- **All physical constants are normalized to 1** (mass, charge, velocity, plate geometry). Voltages are proportional, not absolute. Deliberate — the project was about the geometry and the inverse problem, not predicting a real print head's drive voltage. Real values plug straight in.
+- Input path is hardcoded.
